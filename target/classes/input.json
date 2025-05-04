@@ -1,0 +1,8 @@
+{
+  "id": "Apples",
+  "rarity": "Rare",
+  "others": {
+    "value": 1.2
+  },
+  "items": ["a", "b", "c"]
+}

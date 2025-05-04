@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<object xmlns:xj="http://camel.apache.org/component/xj" xj:type="object">
+    <object xj:name="id" xj:type="string">Apples</object>
+    <object xj:name="rarity" xj:type="string">Rare</object>
+    <object xj:name="others" xj:type="object">
+        <object xj:name="value" xj:type="float">1.2</object>
+    </object>
+    <object xj:name="items" xj:type="array">
+        <object xj:type="string">a</object>
+        <object xj:type="string">b</object>
+        <object xj:type="string">c</object>
+    </object>
+</object>
