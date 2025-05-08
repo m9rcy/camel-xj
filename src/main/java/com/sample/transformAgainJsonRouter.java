@@ -11,7 +11,7 @@ public class transformAgainJsonRouter extends RouteBuilder  {
         from("direct:transform-3")
                 .setHeader("creationDateTime", simple("${date:now:yyyy-MM-dd'T'HH:mm:ss}"))
                 .setHeader("key.name", constant("1113333"))
-                .setBody().simple("resource:classpath:new-input2.json")
+                .setBody().simple("resource:classpath:new-input.json")
                 .convertBodyTo(String.class)
                 .log("Before transform: ${body}")
                 //.to("xj:identity?transformDirection=JSON2XML")
