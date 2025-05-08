@@ -1,0 +1,17 @@
+[ {
+  "op" : "add",
+  "path" : "/workOrderNumbers/0",
+  "value" : "3"
+}, {
+  "op" : "add",
+  "path" : "/workOrderNumbers/1",
+  "value" : "1"
+}, {
+  "op" : "add",
+  "path" : "/workOrderNumbers/2",
+  "value" : "4"
+}, {
+  "op" : "remove",
+  "path" : "/workOrderNumbers/4",
+  "value" : "4"
+} ]

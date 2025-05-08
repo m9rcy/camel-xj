@@ -88,6 +88,12 @@
       <artifactId>camel-kafka-starter</artifactId>
       <!-- use the same version as your Camel core version -->
     </dependency>
+    <dependency>
+      <groupId>org.apache.camel.springboot</groupId>
+      <artifactId>camel-jacksonxml-starter</artifactId>
+      <!-- use the same version as your Camel core version -->
+    </dependency>
+
 
     <dependency>
       <groupId>org.apache.camel</groupId>

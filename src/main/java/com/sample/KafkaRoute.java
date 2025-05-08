@@ -13,7 +13,7 @@ import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.*;
 
-@Component
+//@Component
 public class KafkaRoute extends RouteBuilder {
     private static final ObjectMapper objectMapper = new ObjectMapper().registerModule(JsonFormat.getCloudEventJacksonModule());
     @Override
