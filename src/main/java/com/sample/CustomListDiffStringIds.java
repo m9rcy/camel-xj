@@ -36,8 +36,8 @@ public class CustomListDiffStringIds {
         
         // Create result JSON
         ObjectNode result = mapper.createObjectNode();
-        result.putArray("added").addAll(mapper.valueToTree(added));
-        result.putArray("removed").addAll(mapper.valueToTree(removed));
+        //result.putArray("added").addAll(mapper.valueToTree(added));
+        //result.putArray("removed").addAll(mapper.valueToTree(removed));
         
         // Print the JSON result
         System.out.println(mapper.writerWithDefaultPrettyPrinter()
