@@ -1,6 +1,8 @@
 package com.sample;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.cloudevents.core.builder.CloudEventBuilder;
 import io.cloudevents.core.v1.CloudEventV1;
 import io.cloudevents.jackson.JsonFormat;
@@ -11,21 +13,26 @@ import org.apache.camel.component.cloudevents.CloudEvent;
 import org.apache.camel.component.cloudevents.CloudEvents;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.model.validator.CustomValidatorDefinition;
+import org.apache.camel.processor.aggregate.UseOriginalAggregationStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Component
 public class KafkaRoute extends RouteBuilder {
     private static final ObjectMapper objectMapper = new ObjectMapper().registerModule(JsonFormat.getCloudEventJacksonModule());
 
+
     @Autowired
     CustomValidator customValidator;
     @Override
     public void configure() throws Exception {
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         getCamelContext().getRegistry().bind("test", customValidator);
 
         from("timer:cloudProducer?period=5000")
@@ -44,7 +51,7 @@ public class KafkaRoute extends RouteBuilder {
                     Collections.shuffle(itemTags);
                     List<String> items = itemTags.subList(0, 3);
 
-                    FruitEvent event = new FruitEvent(id, rarity, others, items);
+                    FruitEvent event = FruitEvent.builder().id(id).rarity(rarity).others(others).items(items).start(OffsetDateTime.now()).end(OffsetDateTime.now().plusMinutes(5)).build();
 
                     io.cloudevents.CloudEvent cloudEvent = CloudEventBuilder.v1()
                             .withId(UUID.randomUUID().toString())
@@ -64,7 +71,10 @@ public class KafkaRoute extends RouteBuilder {
 //                    exchange.getIn().setHeader("ce-specversion", "1.0");
 //                    exchange.getIn().setHeader("ce-time", OffsetDateTime.now().toString());
                 })
-                .marshal().json()
+                .marshal().json(JsonLibrary.Jackson)
+                                .process(exchange -> {
+                    System.out.println("🔥 Test" );
+                })
                 .to("kafka:cloudevents-demo?"
                         + "brokers=localhost:9092"
                         //+ "&valueSerializer=io.cloudevents.kafka.CloudEventSerializer"
@@ -78,7 +88,12 @@ public class KafkaRoute extends RouteBuilder {
                 + "&valueDeserializer=org.apache.kafka.common.serialization.StringDeserializer"
                 + "&keyDeserializer=org.apache.kafka.common.serialization.StringDeserializer")
                 .log("got a body ${body}")
-        .to("direct:validateUser");
+                .enrich("direct:validateUser", new UseOriginalAggregationStrategy())
+                .process(exchange -> {
+                    System.out.println("🔥 Test" );
+                })
+                .log("got a body after ${body}");
+        //.to("direct:validateUser");
 //                .process(exchange -> {
 //                    CloudEventV1 event = exchange.getIn().getBody(CloudEventV1.class);
 //                    System.out.println("🔥 Received FruitEvent: " + event);
@@ -95,8 +110,8 @@ public class KafkaRoute extends RouteBuilder {
 
         from("direct:validateUser")
                 .unmarshal().json(FruitEvent.class)
-                .bean(CustomValidator.class, "validate")
-                //.to("bean-validator://testing")
+                //.bean(CustomValidator.class, "validate")
+                .to("bean-validator://testing")
                 //.unmarshal().json(JsonLibrary.Jackson, FruitEvent.class)
                 //.bean(CustomValidator.class)
                 //.validate().method(CustomValidator.class, "validate")
@@ -104,11 +119,11 @@ public class KafkaRoute extends RouteBuilder {
                 .log("Valid user received: ${body.id}")
                 //.bean(CustomValidator.class, "validate")
 
-                .onException(ValidationException.class)
-                .handled(true)
-                .log("Validation error: ${exception.message}")
-                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(400))
-                .setBody(simple("{\"error\": \"${exception.message}\"}"))
+//                .onException(ValidationException.class)
+//                .handled(false)
+//                .log("Validation error: ${exception.message}")
+//                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(400))
+//                .setBody(simple("{\"error\": \"${exception.message}\"}"))
                 .end();
     }
 
