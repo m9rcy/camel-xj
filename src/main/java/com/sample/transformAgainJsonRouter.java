@@ -3,7 +3,7 @@ package com.sample;
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.stereotype.Component;
 
-@Component
+//@Component
 public class transformAgainJsonRouter extends RouteBuilder  {
     @Override
     public void configure() throws Exception {
