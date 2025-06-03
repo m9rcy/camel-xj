@@ -1,0 +1,12 @@
+<QueryResponse xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns="http://example.com" rsCount="1" rsStart="0"
+               rsTotal="1">
+    <TP_OB_SET>
+        <TPBLOCK>
+            <STATUS maxvalue="OPERATING">COMMISSION</STATUS>
+            <LOCATION>AEST_1</LOCATION>
+            <LOCATIONSID>10001</LOCATIONSID>
+            <DESCRIPTION>AEST_1 DESC</DESCRIPTION>
+            <TYPE>OUTAGE BLOCK</TYPE>
+        </TPBLOCK>
+    </TP_OB_SET>
+</QueryResponse>

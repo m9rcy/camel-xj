@@ -22,7 +22,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-@Component
+//@Component
 public class KafkaRoute extends RouteBuilder {
     private static final ObjectMapper objectMapper = new ObjectMapper().registerModule(JsonFormat.getCloudEventJacksonModule());
 

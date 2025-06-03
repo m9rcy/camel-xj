@@ -1,0 +1,26 @@
+<QueryResponse xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns="http://example.com" rsCount="3" rsStart="0"
+               rsTotal="3">
+    <TP_OB_SET>
+        <TPBLOCK>
+            <STATUS maxvalue="OPERATING">COMMISSION</STATUS>
+            <LOCATION>AEST_1</LOCATION>
+            <DESCRIPTION>AEST_1 DESC</DESCRIPTION>
+            <TYPE>OUTAGE BLOCK</TYPE>
+            <DISABLED>0</DISABLED>
+        </TPBLOCK>
+        <TPBLOCK>
+            <STATUS maxvalue="OPERATING">COMMISSION</STATUS>
+            <LOCATION>AEST_2</LOCATION>
+            <DESCRIPTION>AEST_2 DESC</DESCRIPTION>
+            <TYPE>OUTAGE BLOCK</TYPE>
+            <DISABLED>0</DISABLED>
+        </TPBLOCK>
+        <TPBLOCK>
+            <STATUS maxvalue="OPERATING">COMMISSION</STATUS>
+            <LOCATION>AEST_2</LOCATION>
+            <DESCRIPTION>AEST_2 DESC</DESCRIPTION>
+            <TYPE>OUTAGE BLOCK</TYPE>
+            <DISABLED>0</DISABLED>
+        </TPBLOCK>
+    </TP_OB_SET>
+</QueryResponse>
