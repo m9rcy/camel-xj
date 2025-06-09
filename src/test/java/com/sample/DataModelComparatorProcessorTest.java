@@ -13,221 +13,197 @@ import static org.junit.jupiter.api.Assertions.*;
 class DataModelComparatorProcessorTest {
 
     private DataModelComparatorProcessor processor;
-    private OffsetDateTime now;
+    private DefaultCamelContext camelContext;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         processor = new DataModelComparatorProcessor();
-        now = OffsetDateTime.now();
+        camelContext = new DefaultCamelContext();
     }
 
-    @Test
-    void testCurrentIsNull() {
-        Exchange exchange = new DefaultExchange(new DefaultCamelContext());
-        assertThrows(IllegalArgumentException.class, () -> processor.process(exchange));
-    }
-
-    @Test
-    void testPreviousIsNull_shouldSetUpdateAction() throws Exception {
-        DataModel current = DataModel.builder()
-                .blockId(1L)
-                .name("Item A")
-                .version(1)
-                .modifiedOn(now)
-                .description("Initial")
-                .active(true)
+    private DataModel createModel(Long blockId, String name, String description, boolean active, int version, OffsetDateTime modifiedOn) {
+        return DataModel.builder()
+                .blockId(blockId)
+                .name(name)
+                .description(description)
+                .active(active)
+                .version(version)
+                .modifiedOn(modifiedOn)
                 .build();
+    }
 
-        Exchange exchange = new DefaultExchange(new DefaultCamelContext());
+    @Test
+    void testNullPrevious_setsHasChangeTrue() throws Exception {
+        Exchange exchange = new DefaultExchange(camelContext);
+        DataModel current = createModel(1L, "A", "test", true, 1, OffsetDateTime.now());
+
         exchange.getIn().setBody(current);
+        exchange.setProperty("previous", null);
 
         processor.process(exchange);
-
         DataModelDto dto = exchange.getMessage().getBody(DataModelDto.class);
+
         assertTrue(dto.isHasChange());
-        assertEquals(DataModelDto.ChangeAction.UPDATE, dto.getChangeAction());
+        assertFalse(dto.isNameChanged());
+        assertEquals("A", dto.getName());
     }
 
     @Test
-    void testPreviousNewerVersion_shouldThrow() {
-        DataModel previous = DataModel.builder()
-                .version(2)
-                .modifiedOn(now.minusDays(1))
-                .build();
+    void testNoChange_setsHasChangeFalse() throws Exception {
+        OffsetDateTime timestamp = OffsetDateTime.now();
+        DataModel model = createModel(1L, "A", "desc", true, 2, timestamp);
 
-        DataModel current = DataModel.builder()
-                .version(1)
-                .modifiedOn(now)
-                .build();
-
-        Exchange exchange = new DefaultExchange(new DefaultCamelContext());
-        exchange.getIn().setBody(current);
-        exchange.setProperty("previous", previous);
-
-        assertThrows(IllegalArgumentException.class, () -> processor.process(exchange));
-    }
-
-    @Test
-    void testPreviousModifiedOnAfterCurrent_shouldThrow() {
-        DataModel previous = DataModel.builder()
-                .version(1)
-                .modifiedOn(now.plusDays(1))
-                .build();
-
-        DataModel current = DataModel.builder()
-                .version(1)
-                .modifiedOn(now)
-                .build();
-
-        Exchange exchange = new DefaultExchange(new DefaultCamelContext());
-        exchange.getIn().setBody(current);
-        exchange.setProperty("previous", previous);
-
-        assertThrows(IllegalArgumentException.class, () -> processor.process(exchange));
-    }
-
-    @Test
-    void testNameChanged_shouldSetRename() throws Exception {
-        DataModel previous = DataModel.builder()
-                .name("Old Name")
-                .version(1)
-                .modifiedOn(now.minusMinutes(1))
-                .active(true)
-                .description("Same")
-                .build();
-
-        DataModel current = DataModel.builder()
-                .name("New Name")
-                .version(2)
-                .modifiedOn(now)
-                .active(true)
-                .description("Same")
-                .build();
-
-        Exchange exchange = new DefaultExchange(new DefaultCamelContext());
-        exchange.getIn().setBody(current);
-        exchange.setProperty("previous", previous);
+        Exchange exchange = new DefaultExchange(camelContext);
+        exchange.getIn().setBody(model);
+        exchange.setProperty("previous", model);
 
         processor.process(exchange);
-
         DataModelDto dto = exchange.getMessage().getBody(DataModelDto.class);
-        assertTrue(dto.isHasChange());
-        assertEquals(DataModelDto.ChangeAction.RENAME, dto.getChangeAction());
-    }
 
-    @Test
-    void testActivated_shouldSetActivate() throws Exception {
-        DataModel previous = DataModel.builder()
-                .name("Name")
-                .description("Desc")
-                .version(1)
-                .modifiedOn(now.minusMinutes(2))
-                .active(false)
-                .build();
-
-        DataModel current = DataModel.builder()
-                .name("Name")
-                .description("Desc")
-                .version(2)
-                .modifiedOn(now)
-                .active(true)
-                .build();
-
-        Exchange exchange = new DefaultExchange(new DefaultCamelContext());
-        exchange.getIn().setBody(current);
-        exchange.setProperty("previous", previous);
-
-        processor.process(exchange);
-
-        DataModelDto dto = exchange.getMessage().getBody(DataModelDto.class);
-        assertTrue(dto.isHasChange());
-        assertEquals(DataModelDto.ChangeAction.ACTIVATE, dto.getChangeAction());
-    }
-
-    @Test
-    void testDeactivated_shouldSetDeactivate() throws Exception {
-        DataModel previous = DataModel.builder()
-                .name("Name")
-                .description("Desc")
-                .version(1)
-                .modifiedOn(now.minusMinutes(2))
-                .active(true)
-                .build();
-
-        DataModel current = DataModel.builder()
-                .name("Name")
-                .description("Desc")
-                .version(2)
-                .modifiedOn(now)
-                .active(false)
-                .build();
-
-        Exchange exchange = new DefaultExchange(new DefaultCamelContext());
-        exchange.getIn().setBody(current);
-        exchange.setProperty("previous", previous);
-
-        processor.process(exchange);
-
-        DataModelDto dto = exchange.getMessage().getBody(DataModelDto.class);
-        assertTrue(dto.isHasChange());
-        assertEquals(DataModelDto.ChangeAction.DEACTIVATE, dto.getChangeAction());
-    }
-
-    @Test
-    void testDescriptionChanged_shouldSetUpdate() throws Exception {
-        DataModel previous = DataModel.builder()
-                .name("Same")
-                .description("Old")
-                .version(1)
-                .modifiedOn(now.minusMinutes(2))
-                .active(true)
-                .build();
-
-        DataModel current = DataModel.builder()
-                .name("Same")
-                .description("New")
-                .version(2)
-                .modifiedOn(now)
-                .active(true)
-                .build();
-
-        Exchange exchange = new DefaultExchange(new DefaultCamelContext());
-        exchange.getIn().setBody(current);
-        exchange.setProperty("previous", previous);
-
-        processor.process(exchange);
-
-        DataModelDto dto = exchange.getMessage().getBody(DataModelDto.class);
-        assertTrue(dto.isHasChange());
-        assertEquals(DataModelDto.ChangeAction.UPDATE, dto.getChangeAction());
-    }
-
-    @Test
-    void testNoChange_shouldSetHasChangeFalse() throws Exception {
-        DataModel previous = DataModel.builder()
-                .name("Same")
-                .description("Same")
-                .version(1)
-                .modifiedOn(now.minusMinutes(2))
-                .active(true)
-                .build();
-
-        DataModel current = DataModel.builder()
-                .name("Same")
-                .description("Same")
-                .version(2)
-                .modifiedOn(now)
-                .active(true)
-                .build();
-
-        Exchange exchange = new DefaultExchange(new DefaultCamelContext());
-        exchange.getIn().setBody(current);
-        exchange.setProperty("previous", previous);
-
-        processor.process(exchange);
-
-        DataModelDto dto = exchange.getMessage().getBody(DataModelDto.class);
         assertFalse(dto.isHasChange());
-        assertNull(dto.getChangeAction());
+        assertFalse(dto.isNameChanged());
     }
+
+    @Test
+    void testNameChange_setsHasChangeTrueAndOldName() throws Exception {
+        OffsetDateTime timestamp = OffsetDateTime.now();
+        DataModel previous = createModel(1L, "Old", "desc", true, 1, timestamp.minusDays(1));
+        DataModel current = createModel(1L, "New", "desc", true, 2, timestamp);
+
+        Exchange exchange = new DefaultExchange(camelContext);
+        exchange.getIn().setBody(current);
+        exchange.setProperty("previous", previous);
+
+        processor.process(exchange);
+        DataModelDto dto = exchange.getMessage().getBody(DataModelDto.class);
+
+        assertTrue(dto.isHasChange());
+        assertTrue(dto.isNameChanged());
+        assertEquals("New", dto.getName());
+        assertEquals("Old", dto.getOldName());
+    }
+
+    @Test
+    void testStatusChange_setsHasChangeTrue() throws Exception {
+        OffsetDateTime timestamp = OffsetDateTime.now();
+        DataModel previous = createModel(1L, "A", "desc", false, 1, timestamp.minusDays(1));
+        DataModel current = createModel(1L, "A", "desc", true, 2, timestamp);
+
+        Exchange exchange = new DefaultExchange(camelContext);
+        exchange.getIn().setBody(current);
+        exchange.setProperty("previous", previous);
+
+        processor.process(exchange);
+        DataModelDto dto = exchange.getMessage().getBody(DataModelDto.class);
+
+        assertTrue(dto.isHasChange());
+        assertFalse(dto.isNameChanged());
+        assertTrue(dto.isActive());
+    }
+
+    @Test
+    void testDescriptionChange_setsHasChangeTrue() throws Exception {
+        OffsetDateTime timestamp = OffsetDateTime.now();
+        DataModel previous = createModel(1L, "A", "desc1", true, 1, timestamp.minusDays(1));
+        DataModel current = createModel(1L, "A", "desc2", true, 2, timestamp);
+
+        Exchange exchange = new DefaultExchange(camelContext);
+        exchange.getIn().setBody(current);
+        exchange.setProperty("previous", previous);
+
+        processor.process(exchange);
+        DataModelDto dto = exchange.getMessage().getBody(DataModelDto.class);
+
+        assertTrue(dto.isHasChange());
+        assertFalse(dto.isNameChanged());
+        assertEquals("desc2", dto.getDescription());
+    }
+
+    @Test
+    void testOlderVersion_throwsException() {
+        OffsetDateTime timestamp = OffsetDateTime.now();
+        DataModel previous = createModel(1L, "A", "desc", true, 3, timestamp);
+        DataModel current = createModel(1L, "A", "desc", true, 2, timestamp);
+
+        Exchange exchange = new DefaultExchange(camelContext);
+        exchange.getIn().setBody(current);
+        exchange.setProperty("previous", previous);
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> processor.process(exchange));
+        assertEquals("Previous version is newer than current version.", exception.getMessage());
+    }
+
+    @Test
+    void testPreviousModifiedOnAfterCurrent_throwsException() {
+        OffsetDateTime now = OffsetDateTime.now();
+        DataModel previous = createModel(1L, "A", "desc", true, 1, now.plusMinutes(1));
+        DataModel current = createModel(1L, "A", "desc", true, 2, now);
+
+        Exchange exchange = new DefaultExchange(camelContext);
+        exchange.getIn().setBody(current);
+        exchange.setProperty("previous", previous);
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> processor.process(exchange));
+        assertEquals("Previous modifiedOn is after current modifiedOn.", exception.getMessage());
+    }
+
+    @Test
+    void testNameAndDescriptionChange_setsHasChangeAndOldName() throws Exception {
+        OffsetDateTime timestamp = OffsetDateTime.now();
+        DataModel previous = createModel(1L, "Old", "desc1", true, 1, timestamp.minusDays(1));
+        DataModel current = createModel(1L, "New", "desc2", true, 2, timestamp);
+
+        Exchange exchange = new DefaultExchange(camelContext);
+        exchange.getIn().setBody(current);
+        exchange.setProperty("previous", previous);
+
+        processor.process(exchange);
+        DataModelDto dto = exchange.getMessage().getBody(DataModelDto.class);
+
+        assertTrue(dto.isHasChange());
+        assertTrue(dto.isNameChanged());
+        assertEquals("Old", dto.getOldName());
+        assertEquals("desc2", dto.getDescription());
+    }
+
+    @Test
+    void testStatusAndDescriptionChange_setsHasChange() throws Exception {
+        OffsetDateTime timestamp = OffsetDateTime.now();
+        DataModel previous = createModel(1L, "A", "desc1", false, 1, timestamp.minusDays(1));
+        DataModel current = createModel(1L, "A", "desc2", true, 2, timestamp);
+
+        Exchange exchange = new DefaultExchange(camelContext);
+        exchange.getIn().setBody(current);
+        exchange.setProperty("previous", previous);
+
+        processor.process(exchange);
+        DataModelDto dto = exchange.getMessage().getBody(DataModelDto.class);
+
+        assertTrue(dto.isHasChange());
+        assertFalse(dto.isNameChanged());
+        assertTrue(dto.isActive());
+        assertEquals("desc2", dto.getDescription());
+    }
+
+    @Test
+    void testAllFieldsChanged_setsHasChangeAndOldName() throws Exception {
+        OffsetDateTime timestamp = OffsetDateTime.now();
+        DataModel previous = createModel(1L, "Old", "desc1", false, 1, timestamp.minusDays(1));
+        DataModel current = createModel(1L, "New", "desc2", true, 2, timestamp);
+
+        Exchange exchange = new DefaultExchange(camelContext);
+        exchange.getIn().setBody(current);
+        exchange.setProperty("previous", previous);
+
+        processor.process(exchange);
+        DataModelDto dto = exchange.getMessage().getBody(DataModelDto.class);
+
+        assertTrue(dto.isHasChange());
+        assertTrue(dto.isNameChanged());
+        assertEquals("Old", dto.getOldName());
+        assertEquals("New", dto.getName());
+        assertEquals("desc2", dto.getDescription());
+        assertTrue(dto.isActive());
+    }
+
 }
